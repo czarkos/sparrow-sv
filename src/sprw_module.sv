@@ -151,7 +151,7 @@ module sprw_module(
     // TODO: Check if it can be made more generic
     function high_prec_component extend(vector_component value, input logic sign);
         high_prec_component z;
-        if (sign == 1)
+        if (value[7] == 1'b1 & sign == 1'b1)
             z = {8'b1111_1111, value};
         else
             z = {8'b0000_0000, value};
@@ -309,14 +309,15 @@ module sprw_module(
         integer z, i;
         high_prec_component c, new_c;
         c = {rdh, a};
-        if (b[7] == 1'b1) begin
+        if (b[7] == 1'b1) begin // shift rigth
             i = -1*int'(signed'(b[7:1]));
-            if (b[0] == 1'b1)
+            if (b[0] == 1'b1) // arithmetic
                 return c >> i;
             else begin
-                new_c = (~c + 16'b0000_0000_0000_0001) >> i;
-                z =  -1 * int'(new_c);
-                return z[15:0];
+                //new_c = (~c + 16'b0000_0000_0000_0001) >> i;
+                //z =  -1 * int'(new_c);
+                //return z[15:0];
+                return c >> i;
             end
         end
         else begin
@@ -400,12 +401,12 @@ module sprw_module(
     function word sum(input inter_reg_type a, logic sign, sat);
         automatic integer acc = 0;
         if (sign == 1'b1) begin
-            for (integer i = 0; i < VSIZE-1; i++)
+            for (integer i = 0; i < VSIZE; i++)
                 acc = acc + int'(signed'(a[i]));
             return signed_sat32(acc, sat);
         end
         else begin
-            for (integer i = 0; i < VSIZE-1; i++)
+            for (integer i = 0; i < VSIZE; i++)
                 acc = acc + int'(unsigned'(a[i]));
             return unsigned_sat32(acc, sat);
         end
@@ -477,6 +478,8 @@ module sprw_module(
     lpmul_in_array lpmuli /*verilator split_var*/;
     lpmul_out_array lpmulo /*verilator split_var*/;
 
+    logic [15:0] mul0_result;
+
     /* GENERATE 4 MULTIPLICATION UNITS */
     /*
     generate
@@ -517,6 +520,7 @@ module sprw_module(
     logic sign;
     word s2_res;
 
+    logic sdi_ctrl_hp;
     /* MAIN BODY */
     always_comb begin
         // v = r;
@@ -567,6 +571,7 @@ module sprw_module(
         sign = sign_ext(r.s1.op1, r.s1.op2);
         s1_mux(r.s1.op1, s1_alusel);
 
+        sdi_ctrl_hp = sdi.ctrl.hp;
         // S1 TO S2
         for(integer i = 0; i < 4; i++) begin
             add_res[i]   = add(rs1[i], rs2[i], sign, r.s1.op1[3]);

@@ -52,7 +52,7 @@ module lpmul
         if (sat == 1'b1) begin
             if (sign == 1'b1) begin
                 if (asign == bsign) begin                           // result should be positive
-                    if (z2 != 8'b0000_0000 || rsign != 1'b0)        // overflow including sign bit
+                    if (z2 != 8'b0000_0000 | rsign != 1'b0)        // overflow including sign bit
                         sel = 3'b011;                               // result is 7f signed max
                 end
                 else begin                                          // result should be negative 
@@ -116,7 +116,7 @@ module lpmul
         // low precision product
         z = product(a, b);
         // select result with sign and saturation
-        mux = sat_mux(signA, signB, z[15], muli.sign, muli.sat, z[15:8]);
+        mux = sat_mux(signA, signB, z[7], muli.sign, muli.sat, z[15:8]);
         nz = sign_invert16(z);
         sat_sel(.sel(mux), .r(z), .nr(nz), .mulres(mulo.mul_res));
         //sat_sel(.sel(mux), .r(z), .nr(sign_invert16(z)), .mulres(out_reg));

@@ -14,6 +14,9 @@ module sprw_wrapper(
     input logic  [31:0] ra,
     input logic  [31:0] rb,
     input logic  [31:0] instr,
+
+    //input logic bypass,
+
     output logic [31:0] sprw_out
 );
 
@@ -46,4 +49,6 @@ module sprw_wrapper(
     );
 
     assign sprw_out = sdo.result;
+    // assign sprw_out = (bypass) ? sdo.s2bp : sdo.result;
+    //assign sprw_out = sdo.s2bp;
 endmodule
