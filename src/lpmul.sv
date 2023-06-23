@@ -21,20 +21,23 @@ module lpmul
     localparam vector_component UMAX = 8'b1111_1111;
 
     function vector_component sign_invert8 (input vector_component a);
-        automatic logic [7:0] tmp_a = ~a + 8'b0000_0001;
-        //return ~a + 8'b0000_0001;
-        return tmp_a;
+        //automatic logic [7:0] tmp_a = ~a + 8'b0000_0001;
+        return ~a + 8'b0000_0001;
+        //return tmp_a;
     endfunction : sign_invert8
 
     function high_prec_component sign_invert16 (input high_prec_component a);
-        automatic logic [15:0] tmp_a = ~a + 16'b0000_0000_0000_0001;
-        //return ~a + 16'b0000_0000_0000_0001;
-        return tmp_a;
+        //automatic logic [15:0] tmp_a = ~a + 16'b0000_0000_0000_0001;
+        return ~a + 16'b0000_0000_0000_0001;
+        //return tmp_a;
     endfunction : sign_invert16
 
     function high_prec_component product (input vector_component a, b);
-        automatic integer z = 0;
-        automatic integer aux = int'(unsigned'(a));
+        integer z = 0;
+        integer aux;
+
+        z = 0;
+        aux = int'(unsigned'(a));
 
         for (integer i = 0; i < VLEN; i++) begin
             if (b[i] == 1) begin
@@ -48,7 +51,8 @@ module lpmul
 
     function logic [2:0] sat_mux (input logic asign, bsign, rsign, sign, sat, 
                                     vector_component z2);
-        automatic logic [2:0] sel = 3'b000;                         // result as it is, no saturation
+        logic [2:0] sel;                         // result as it is, no saturation
+        sel = 3'b000;                         // result as it is, no saturation
         if (sat == 1'b1) begin
             if (sign == 1'b1) begin
                 if (asign == bsign) begin                           // result should be positive
@@ -73,7 +77,8 @@ module lpmul
         return sel;
     endfunction : sat_mux
 
-    task sat_sel (input logic [2:0] sel, input high_prec_component r, nr,
+    //task sat_sel (input logic [2:0] sel, input high_prec_component r, nr,
+    function sat_sel (input logic [2:0] sel, input high_prec_component r, nr,
                 output high_prec_component mulres);
         logic [7:0] bit0 = 8'b0000_0000;
         logic [7:0] bit1 = 8'b1111_1111;
@@ -86,7 +91,8 @@ module lpmul
             3'b111: mulres = {bit0, UMAX};
             default: mulres = {bit0, bit0};
         endcase
-    endtask : sat_sel
+    endfunction : sat_sel
+    //endtask : sat_sel
 
     high_prec_component z, nz;
     // high_prec_component out_reg;

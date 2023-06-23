@@ -8,6 +8,8 @@ PACKAGE = sparrow
 #  --x-initial unique
 VFLAGS = -Wno-UNOPTFLAT --trace --x-assign unique --x-initial unique --cc
 
+VCS_FLAGS = -sverilog
+
 sim: waveform.vcd
 
 build: ./obj_dir/V$(PACKAGE)
@@ -37,6 +39,14 @@ waveform.vcd: ./obj_dir/V$(PACKAGE)
 	@echo '### VERILATING ###'
 	verilator $(VFLAGS) src/$(PACKAGE).sv src/wrapper.sv src/$(MODULE).sv src/lpmul.sv --exe $(MAIN).cpp
 	@touch .stamp.verilate
+
+
+.PHONY:.stamp.vcs
+.stamp.verilate: src/$(PACKAGE).sv src/$(MODULE).sv src/lpmul.sv $(MAIN).cpp
+	@echo
+	@echo '### VCSING ###'
+	verilator $(VCS_FLAGS) src/$(PACKAGE).sv src/wrapper.sv src/$(MODULE).sv src/lpmul.sv
+	@touch .stamp.vcs
 
 .PHONY:run
 run:

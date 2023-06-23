@@ -89,7 +89,7 @@ module sprw_module(
 
     /* FUNCTIONS */
     function vector_reg_type word_to_vector(input word data);
-        automatic vector_reg_type vec;
+        vector_reg_type vec;
         vec[0] = data[7:0];
         vec[1] = data[15:8];
         vec[2] = data[23:16];
@@ -98,7 +98,7 @@ module sprw_module(
     endfunction : word_to_vector
 
     function vector_reg_type inter_to_vector(input inter_reg_type data, input bit high );
-        automatic vector_reg_type vec;
+        vector_reg_type vec;
         for(integer i = 0; i < 4; i++) begin
             if(high)
                 vec[i] = data[i][15:8];
@@ -109,7 +109,7 @@ module sprw_module(
     endfunction : inter_to_vector
 
     function word vector_to_word(vector_reg_type vec);
-        automatic word data;
+        word data;
         data[7:0]   = vec[0];
         data[15:8]  = vec[1];
         data[23:16] = vec[2];
@@ -118,7 +118,7 @@ module sprw_module(
     endfunction : vector_to_word
 
     function word inter_to_word(inter_reg_type vec);
-        automatic word data;
+        word data;
             data[7:0]   = vec[0][7:0];
             data[15:8]  = vec[1][7:0];
             data[23:16] = vec[2][7:0];
@@ -138,7 +138,7 @@ module sprw_module(
 
     /* SATURATION FUNCTIONS */
     function integer clipping(input integer value, max_val, min_val);
-        automatic integer ret_val;
+        integer ret_val;
         if (value > max_val)
             ret_val = max_val;
         else if (value < min_val)
@@ -192,7 +192,8 @@ module sprw_module(
     /* TWO OPERARANDS OPERATIONS (S1) */
 
     // s1 result multiplexor
-    task s1_mux(input logic [4:0] op, output logic[3:0] sel);
+    // task s1_mux(input logic [4:0] op, output logic[3:0] sel);
+    function s1_mux(input logic [4:0] op, output logic[3:0] sel);
         sel = {1'b0, op[2:0]};
 
         if(op == S1_SADD || op == S1_USADD)
@@ -210,9 +211,11 @@ module sprw_module(
         else
             sel = {1'b0, op[2:0]};
             
-    endtask : s1_mux
+    endfunction : s1_mux
+    //endtask : s1_mux
 
-    task s1_select;
+    //task s1_select;
+    function s1_select;
         input logic [3:0] sel;
         input inter_reg_type ra, rs2, add_res, sub_res, max_res, min_res, logic_res, shift_res, mul_res;
         output inter_reg_type s1_res;
@@ -230,25 +233,35 @@ module sprw_module(
             default : s1_res = '{default:0};
         endcase
     end
-    endtask : s1_select
+    endfunction : s1_select
+    //endtask : s1_select
 
     //TODO: make signed sat and unsigned_sat so that the add and sub work
     function high_prec_component add(input vector_component a, b, logic sign, sat);
-        integer z = int'(signed'(a)) + int'(signed'(b));
-        assert(z > -512); assert(z < 512);
-        if (sign == 1)
+        //assert(z > -512); assert(z < 512);
+        integer z;
+        if (sign == 1) begin
+            //z = int'(signed'(a)) + int'(signed'(b));
+            z = $signed(a) + $signed(b);
             return signed_sat16(z, sat);
-        else
+        end
+        else begin
+            //z = int'(a) + int'(b);
+            z = $unsigned(a) + $unsigned(b);
             return unsigned_sat16(z, sat);
+        end
     endfunction : add
 
     function high_prec_component sub(input vector_component a, b, logic sign, sat);
-        integer z = int'(signed'(a)) - int'(signed'(b));
-        assert(z > -512); assert(z < 512);
-        if (sign == 1)
+        //assert(z > -512); assert(z < 512);
+        if (sign == 1) begin
+            integer z = int'(signed'(a)) - int'(signed'(b));
             return signed_sat16(z, sat);
-        else
+        end
+        else begin
+            integer z = int'(a) - int'(b);
             return unsigned_sat16(z, sat);
+        end
     endfunction : sub
 
     // max function
@@ -296,9 +309,12 @@ module sprw_module(
             3'b111: z = a & b;
             3'b000: z = a | b;
             3'b001: z = a ^ b;
-            3'b010: z = a ~& b;
-            3'b011: z = a ~| b;
-            3'b100: z = a ~^ b;
+            //3'b010: z = a ~& b;
+            3'b010: z = ~(a & b);
+            //3'b011: z = a ~| b;
+            3'b011: z = ~(a | b);
+	    //3'b100: z = a ~^ b;
+            3'b100: z = ~(a ^ b);
             default: z = 8'b0000_0000;
         endcase
         return z;
@@ -360,7 +376,8 @@ module sprw_module(
     endtask : mask
 
     /* REDUCTION OPERATIONS */
-    task s2_select;
+    // task s2_select;
+    function s2_select;
         input logic [2:0] sel;
         input word ra, sum_res, max_res, min_res, xor_res;
         output word rc;
@@ -378,7 +395,8 @@ module sprw_module(
         else
             rc = ra;
     end
-    endtask : s2_select
+    endfunction : s2_select
+    //endtask : s2_select
 
     function word signed_sat32(input integer a, logic sat);
         integer ret;
@@ -399,7 +417,8 @@ module sprw_module(
     endfunction : unsigned_sat32
 
     function word sum(input inter_reg_type a, logic sign, sat);
-        automatic integer acc = 0;
+        integer acc;
+        acc = 0;
         if (sign == 1'b1) begin
             for (integer i = 0; i < VSIZE; i++)
                 acc = acc + int'(signed'(a[i]));
@@ -430,7 +449,7 @@ module sprw_module(
             end
         end
 
-        return unsigned_sat32(acc, 0'b0);
+        return unsigned_sat32(acc, 1'b0);
     endfunction : max_red
 
     // min recursive function
@@ -451,7 +470,7 @@ module sprw_module(
             end
         end
 
-        return unsigned_sat32(acc, 0'b0);
+        return unsigned_sat32(acc, 1'b0);
     endfunction : min_red
 
     function word xor_red(inter_reg_type a);
@@ -580,7 +599,7 @@ module sprw_module(
             max_res[i]   = max(rs1[i], rs2[i], sign);
             min_res[i]   = min(rs1[i], rs2[i], sign);
             shift_res[i] = shift(rs1[i], rs2[i], r.rdh[i], r.s1.op1[3], sdi.ctrl.hp);
-            logic_res[i] = extend(logic_op(rs1[i], rs2[i], r.s1.op1[2:0]), 0'b0);
+            logic_res[i] = extend(logic_op(rs1[i], rs2[i], r.s1.op1[2:0]), 1'b0);
             s1_ra[i]     = extend(r.s1.ra[i], sign);
             s1_r2[i]     = extend(rs2[i], sign);
         end
